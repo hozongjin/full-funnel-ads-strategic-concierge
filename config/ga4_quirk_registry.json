@@ -1,0 +1,27 @@
+[
+  {
+    "id": "Q001",
+    "description": "session_engaged must check both string_value='1' and int_value=1 due to GA4 schema inconsistency",
+    "check_type": "must_include",
+    "check_patterns": ["string_value", "int_value"],
+    "applies_when_keywords": ["session_engaged", "engaged", "bounce"],
+    "source_incident": "100% bounce rate bug — GA4 stores session_engaged as string in some events and int in others"
+  },
+  {
+    "id": "Q002",
+    "description": "Engagement must be computed at session level via CTE before summing, not directly from raw events",
+    "check_type": "must_include",
+    "check_patterns": ["GROUP BY"],
+    "forbidden_patterns": ["SUM(session_engaged)", "COUNT(session_engaged)"],
+    "applies_when_keywords": ["bounce", "engaged", "engagement"],
+    "source_incident": "Negative bounce rate bug — multiple engaged events per session inflated engaged_sessions > total_sessions"
+  },
+  {
+    "id": "Q003",
+    "description": "All division in SQL must use SAFE_DIVIDE to prevent zero-denominator crashes",
+    "check_type": "must_include",
+    "check_patterns": ["SAFE_DIVIDE"],
+    "applies_when_keywords": ["divide", "division", "percent", "margin"],
+    "source_incident": "Runtime BQ error — channels with 0 sessions caused division-by-zero crashes"
+  }
+]

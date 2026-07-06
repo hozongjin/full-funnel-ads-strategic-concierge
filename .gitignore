@@ -1,0 +1,24 @@
+# Secret/Credentials files
+credentials.json
+.env
+token.json
+
+# Temporary files
+.tmp/
+tmp/
+*.log
+
+# Python virtual environments & packages
+.venv/
+venv/
+__pycache__/
+*.pyc
+.uv/
+
+# Scratch / personal files (not for publishing)
+eval_output.txt
+financial_report.md
+phase1_kaggle_cells.py
+phase1_test.ipynb
+test_sql.py
+config/eval_log.jsonl

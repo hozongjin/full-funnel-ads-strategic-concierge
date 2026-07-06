@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic AI Analyst</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1>AI Analyst</h1>
+            </div>
+            
+            <button class="btn-new-chat" onclick="newChat()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                New Chat
+            </button>
+
+            <nav class="nav-menu" id="navigation-list">
+                <button class="nav-item active" id="btn-summary" onclick="switchTab('dashboard')">Overview</button>
+                <button class="nav-item" id="btn-schema" onclick="switchTab('schema')">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:8px; vertical-align:middle;">
+                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                        <polyline points="22,6 12,13 2,6"></polyline>
+                    </svg>
+                    Schema
+                </button>
+                <!-- Dynamic chats append here -->
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Overview Dashboard View -->
+            <div id="dashboard-view" class="view-container active">
+                <div class="dashboard-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                    <h2 style="margin: 0;">Overview</h2>
+                    <div style="display: flex; gap: 16px; align-items: center;">
+                        <!-- Country Multi-Select -->
+                        <div class="custom-select-container" style="position: relative;">
+                            <button id="btn-country-select" class="slicer-btn" style="background: var(--card-bg); border-radius: 980px; box-shadow: var(--shadow-soft);" onclick="toggleCountryDropdown()">All Countries ▼</button>
+                            <div id="country-dropdown" style="display: none; position: absolute; right: 0; top: 100%; margin-top: 8px; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; box-shadow: var(--shadow-soft); padding: 8px; z-index: 1000; max-height: 300px; overflow-y: auto; width: max-content; min-width: 150px; text-align: left; font-size: 13px;">
+                                <label style="display: block; padding: 4px 8px; cursor: pointer; border-bottom: 1px solid var(--border-color); margin-bottom: 4px;">
+                                    <input type="checkbox" id="chk-all-countries" checked onchange="toggleAllCountries(this)">
+                                    <strong>Select All</strong>
+                                </label>
+                                <div id="country-list">
+                                    <!-- Options injected here -->
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="date-slicer" style="display: flex; background: var(--card-bg); border-radius: 980px; padding: 4px; box-shadow: var(--shadow-soft);">
+                            <button class="slicer-btn" id="btn-1d" onclick="loadDashboard(1)">1D</button>
+                            <button class="slicer-btn" id="btn-7d" onclick="loadDashboard(7)">7D</button>
+                            <button class="slicer-btn active" id="btn-30d" onclick="loadDashboard(30)">30D</button>
+                            <button class="slicer-btn" id="btn-all" onclick="loadDashboard(90)">ALL</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Acquisition Row -->
+                <h3 class="row-title" style="margin: 0 0 16px 0; font-size: 16px; color: var(--text-secondary);">Acquisition</h3>
+                <div class="dashboard-grid" style="margin-bottom: 32px;">
+                    <div class="metric-card chart-card">
+                        <h4 style="margin: 0 0 16px 0; font-size: 14px; font-weight: 500; color: var(--text-primary);">Users vs New Users</h4>
+                        <div style="height: 250px; width: 100%;"><canvas id="chart-acq-sessions"></canvas></div>
+                    </div>
+                    <div class="metric-card chart-card">
+                        <h4 style="margin: 0 0 16px 0; font-size: 14px; font-weight: 500; color: var(--text-primary);">Top Channels by New Users</h4>
+                        <div style="height: 250px; width: 100%;"><canvas id="chart-acq-channels"></canvas></div>
+                    </div>
+                </div>
+
+                <!-- Engagement Row -->
+                <h3 class="row-title" style="margin: 0 0 16px 0; font-size: 16px; color: var(--text-secondary);">Engagement</h3>
+                <div class="dashboard-grid" style="margin-bottom: 32px;">
+                    <div class="metric-card chart-card">
+                        <h4 style="margin: 0 0 16px 0; font-size: 14px; font-weight: 500; color: var(--text-primary);">Engagement Rate vs Avg Engagement Time</h4>
+                        <div style="height: 250px; width: 100%;"><canvas id="chart-eng-bounce"></canvas></div>
+                    </div>
+                    <div class="metric-card chart-card">
+                        <h4 style="margin: 0 0 16px 0; font-size: 14px; font-weight: 500; color: var(--text-primary);">Mid-Funnel Actions</h4>
+                        <div style="height: 250px; width: 100%;"><canvas id="chart-eng-device"></canvas></div>
+                    </div>
+                </div>
+
+                <!-- Conversion Row -->
+                <h3 class="row-title" style="margin: 0 0 16px 0; font-size: 16px; color: var(--text-secondary);">Conversion</h3>
+                <div class="dashboard-grid" style="margin-bottom: 32px;">
+                    <div class="metric-card chart-card">
+                        <h4 style="margin: 0 0 16px 0; font-size: 14px; font-weight: 500; color: var(--text-primary);">Funnel Exploration</h4>
+                        <div style="height: 250px; width: 100%;"><div id="chart-conv-funnel-container" style="width: 100%; height: 100%;"></div></div>
+                    </div>
+                    <div class="metric-card chart-card">
+                        <h4 style="margin: 0 0 16px 0; font-size: 14px; font-weight: 500; color: var(--text-primary);">E-commerce Conversion Rate (ECR)</h4>
+                        <div style="height: 250px; width: 100%;"><canvas id="chart-conv-ecr"></canvas></div>
+                    </div>
+                </div>
+
+                <!-- Retention Row -->
+                <h3 class="row-title" style="margin: 0 0 16px 0; font-size: 16px; color: var(--text-secondary);">Retention & Value</h3>
+                <div class="dashboard-grid" style="margin-bottom: 32px; grid-template-columns: 1fr;">
+                    <div class="metric-card chart-card">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                            <h4 style="margin: 0; font-size: 14px; font-weight: 500; color: var(--text-primary);">Cohort Analysis (User Retention)</h4>
+                            <div style="display: flex; gap: 24px;">
+                                <div style="text-align: right;">
+                                    <div style="font-size: 12px; color: var(--text-secondary);">Total Purchases</div>
+                                    <div id="kpi-purchases" style="font-size: 18px; font-weight: 600; color: var(--text-primary);">-</div>
+                                </div>
+                                <div style="text-align: right;">
+                                    <div style="font-size: 12px; color: var(--text-secondary);">Total Revenue</div>
+                                    <div id="kpi-revenue" style="font-size: 18px; font-weight: 600; color: var(--accent-green);">-</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="cohort-heatmap" style="width: 100%; overflow-x: auto; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Schema View -->
+            <div id="schema-view" class="view-container">
+                <div class="schema-header" style="margin-bottom: 24px;">
+                    <h2>GA4 Data Dictionary</h2>
+                    <p style="color: var(--text-secondary);">A reference of available engagement metrics and dimensions you can query.</p>
+                </div>
+                
+                <div class="metric-card" style="overflow-x: auto;">
+                    <table class="schema-table">
+                        <thead>
+                            <tr>
+                                <th>Category</th>
+                                <th>Metric / Dimension</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Base Dimensions & Records -->
+                            <tr><td>Dimension</td><td><code>event_date</code></td><td>The date the event was logged (YYYYMMDD).</td></tr>
+                            <tr><td>Dimension</td><td><code>event_timestamp</code></td><td>The time (in microseconds, UTC) the event was logged.</td></tr>
+                            <tr><td>Dimension</td><td><code>event_name</code></td><td>The name of the event (e.g., session_start, view_item).</td></tr>
+                            <tr><td>Record</td><td><code>event_params</code></td><td>Array containing event parameters (key-value pairs) like session_engaged.</td></tr>
+                            <tr><td>Dimension</td><td><code>user_pseudo_id</code></td><td>The pseudonymous ID representing a unique user (cookie/device ID).</td></tr>
+                            <tr><td>Dimension</td><td><code>user_id</code></td><td>The logged-in User ID (if tracked).</td></tr>
+                            <tr><td>Record</td><td><code>device</code></td><td>Device attributes (category, OS, browser).</td></tr>
+                            <tr><td>Record</td><td><code>geo</code></td><td>Geographic attributes (country, region, city).</td></tr>
+                            <tr><td>Record</td><td><code>traffic_source</code></td><td>Traffic acquisition source, medium, and campaign name.</td></tr>
+                            <tr><td>Record</td><td><code>ecommerce</code></td><td>Transaction details like <code>purchase_revenue_in_usd</code>, <code>tax</code>, and <code>shipping</code>.</td></tr>
+                            <tr><td>Record</td><td><code>items</code></td><td>Array of products involved in events, tracking <code>item_name</code>, <code>item_category</code>, <code>price</code>, <code>quantity</code>, etc.</td></tr>
+                            
+                            <!-- Upper Funnel -->
+                            <tr><td>Upper Funnel</td><td><code>Total Unique Users</code></td><td>Total unique browsers/devices that visited the site.</td></tr>
+                            <tr><td>Upper Funnel</td><td><code>Total Sessions</code></td><td>Total number of individual visits.</td></tr>
+                            <tr><td>Upper Funnel</td><td><code>Engaged Sessions</code></td><td>Sessions where user stayed >10s, converted, or viewed 2+ pages.</td></tr>
+                            <tr><td>Upper Funnel</td><td><code>Bounce Rate</code></td><td>Percentage of sessions that ended without meaningful interaction.</td></tr>
+                            
+                            <!-- Mid Funnel -->
+                            <tr><td>Mid Funnel</td><td><code>Category Item Views</code></td><td>Total number of times products in a specific category were viewed.</td></tr>
+                            <tr><td>Mid Funnel</td><td><code>View-to-Cart Ratio</code></td><td>Ratio of add_to_cart events to view_item events.</td></tr>
+                            <tr><td>Mid Funnel</td><td><code>Cart Abandonment Rate</code></td><td>Percentage of users who added an item to cart but did not purchase.</td></tr>
+                            <tr><td>Mid Funnel</td><td><code>Funnel Drop-off Rate</code></td><td>Percentage of users dropping off between sequential stages.</td></tr>
+                            
+                            <!-- Lower Funnel -->
+                            <tr><td>Lower Funnel</td><td><code>E-commerce Conv. Rate (ECR)</code></td><td>Percentage of all visits that result in a purchase.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Chat View -->
+            <div id="chat-view" class="view-container">
+                <div id="chat-container">
+                    <div class="message agent">
+                        Hello! I am your Dynamic FP&A Analyst. I can query GA4 data on the fly, build charts, and generate insights. Ask me anything (e.g., "Which top-converting product categories generate the highest revenue?").
+                    </div>
+                </div>
+
+                <div id="input-area">
+                    <div class="input-box">
+                        <input type="text" id="prompt-input" placeholder="Ask an analytical question..." autocomplete="off" onkeypress="handleEnter(event)">
+                        <button id="send-btn" class="btn-primary" onclick="sendQuery()">Analyze</button>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <script>
+        // State management
+        let sessionId = generateSessionId();
+        let chartIdCounter = 0;
+        let sessions = {}; 
+        let sessionOrder = [sessionId]; 
+        let currentTab = 'dashboard';
+        let chatCount = 1;
+
+        // Initialize current session
+        sessions[sessionId] = {
+            html: document.getElementById('chat-container').innerHTML,
+            name: "Chat " + chatCount
+        };
+
+        function generateSessionId() {
+            return 'session-' + Date.now() + '-' + Math.floor(Math.random() * 100000);
+        }
+
+        function saveCurrentSession() {
+            const container = document.getElementById('chat-container');
+            if (sessions[sessionId]) {
+                sessions[sessionId].html = container.innerHTML;
+            }
+        }
+
+        function renderConversationList() {
+            const list = document.getElementById('navigation-list');
+            
+            // Keep only the Summary and Schema buttons
+            while (list.children.length > 2) {
+                list.removeChild(list.lastChild);
+            }
+            
+            // Update button states
+            const summaryBtn = document.getElementById('btn-summary');
+            const schemaBtn = document.getElementById('btn-schema');
+            
+            if (currentTab === 'dashboard') {
+                summaryBtn.classList.add('active');
+                schemaBtn.classList.remove('active');
+            } else if (currentTab === 'schema') {
+                schemaBtn.classList.add('active');
+                summaryBtn.classList.remove('active');
+            } else {
+                summaryBtn.classList.remove('active');
+                schemaBtn.classList.remove('active');
+            }
+            
+            // Render chats
+            for (let i = 0; i < sessionOrder.length; i++) {
+                const id = sessionOrder[i];
+                const sessionData = sessions[id];
+                
+                const wrap = document.createElement('div');
+                wrap.className = 'chat-nav-wrapper' + (id === sessionId && currentTab === 'chat' ? ' active' : '');
+                
+                const btn = document.createElement('button');
+                btn.className = 'nav-item chat-nav-btn';
+                btn.innerText = sessionData.name;
+                btn.onclick = () => loadChat(id);
+                
+                // Truncate text visually
+                btn.style.whiteSpace = 'nowrap';
+                btn.style.overflow = 'hidden';
+                btn.style.textOverflow = 'ellipsis';
+
+                const editBtn = document.createElement('button');
+                editBtn.className = 'btn-edit-chat';
+                editBtn.innerHTML = '✎';
+                editBtn.title = "Rename Chat";
+                editBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    const newName = prompt("Rename chat:", sessionData.name);
+                    if (newName && newName.trim() !== '') {
+                        sessionData.name = newName.trim();
+                        renderConversationList();
+                    }
+                };
+                
+                wrap.appendChild(btn);
+                wrap.appendChild(editBtn);
+                list.appendChild(wrap);
+            }
+        }
+
+        function switchTab(tabId) {
+            currentTab = tabId;
+            
+            // Hide all views
+            document.querySelectorAll('.view-container').forEach(el => el.classList.remove('active'));
+            
+            if (tabId === 'dashboard') {
+                document.getElementById('dashboard-view').classList.add('active');
+                sessionId = generateSessionId(); // detach from active chat
+            } else if (tabId === 'schema') {
+                document.getElementById('schema-view').classList.add('active');
+                sessionId = generateSessionId(); // detach from active chat
+            } else {
+                document.getElementById('chat-view').classList.add('active');
+                sessionId = tabId;
+                document.getElementById('chat-container').innerHTML = sessions[tabId].html;
+                
+                // scroll to bottom
+                const container = document.getElementById('chat-container');
+                container.scrollTop = container.scrollHeight;
+            }
+            
+            renderConversationList();
+        }
+
+        function loadChat(id) {
+            if (!sessions[id]) return;
+            
+            saveCurrentSession();
+            
+            sessionId = id;
+            const container = document.getElementById('chat-container');
+            container.innerHTML = sessions[id].html;
+            
+            switchTab(id);
+            
+            const chatView = document.getElementById('chat-container');
+            chatView.scrollTop = chatView.scrollHeight;
+        }
+
+        function newChat() {
+            saveCurrentSession();
+            
+            sessionId = generateSessionId();
+            chatCount++;
+            
+            const defaultHtml = `
+                <div class="message agent">
+                    New session started. How can I help you today?
+                </div>
+            `;
+            
+            sessions[sessionId] = {
+                html: defaultHtml,
+                name: "Chat " + chatCount
+            };
+            sessionOrder.push(sessionId);
+            
+            const container = document.getElementById('chat-container');
+            container.innerHTML = defaultHtml;
+            
+            switchTab('chat');
+        }
+
+        function handleEnter(e) {
+            if (e.key === 'Enter') sendQuery();
+        }
+
+        async function sendQuery() {
+            const input = document.getElementById('prompt-input');
+            const query = input.value.trim();
+            if (!query) return;
+
+            // Add user message
+            appendMessage(query, 'user');
+            input.value = '';
+            
+            // Add loading agent message with status bar
+            const loadingId = appendMessage("Initializing Analyst Pipeline...", 'agent');
+            const loadingMsg = document.getElementById(loadingId);
+            
+            // Create status text element inside loading message
+            const statusDiv = document.createElement('div');
+            statusDiv.style.color = 'var(--text-secondary)';
+            statusDiv.style.fontFamily = 'monospace';
+            statusDiv.style.marginTop = '8px';
+            statusDiv.style.fontSize = '13px';
+            loadingMsg.appendChild(statusDiv);
+
+            document.getElementById('send-btn').disabled = true;
+
+            try {
+                const res = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query: query, session_id: sessionId })
+                });
+                
+                const reader = res.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+
+                while(true) {
+                    const {value, done} = await reader.read();
+                    if (done) {
+                        // process remaining buffer if any
+                        if (buffer.startsWith('data: ')) {
+                            try {
+                                const data = JSON.parse(buffer.substring(6));
+                                if (data.type === 'result') {
+                                    if (document.getElementById(loadingId)) document.getElementById(loadingId).remove();
+                                    renderAgentResponse(data.data);
+                                }
+                            } catch(e) {}
+                        }
+                        break;
+                    }
+                    
+                    buffer += decoder.decode(value, {stream: true});
+                    
+                    // Normalize windows newlines
+                    buffer = buffer.replace(/\r\n/g, '\n');
+                    
+                    const lines = buffer.split('\n\n');
+                    buffer = lines.pop(); // keep incomplete chunk
+                    
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            const data = JSON.parse(line.substring(6));
+                            if (data.type === 'status') {
+                                // Update status text
+                                statusDiv.innerText = "> " + data.message;
+                            } else if (data.type === 'result') {
+                                // Remove loading message and render final result
+                                document.getElementById(loadingId).remove();
+                                renderAgentResponse(data.data);
+                            } else if (data.type === 'error') {
+                                document.getElementById(loadingId).remove();
+                                appendMessage("Error: " + data.message, 'agent');
+                            } else if (data.type === 'eval_warning') {
+                                document.getElementById(loadingId).remove();
+                                const flags = data.data.flags || [];
+                                let msg = "⚠️ **Pipeline Paused for Human-In-The-Loop Evaluation** ⚠️\n\n";
+                                msg += "The DataArchitectAgent failed to generate a query that meets our 100% deterministic thresholds after 3 attempts.\n\n";
+                                msg += "Evaluation Flags:\n" + flags.map(f => "- " + f).join("\n") + "\n\n";
+                                msg += "The operation has been aborted to prevent bad data. Please refine your prompt and try again.";
+                                appendMessage(msg, 'agent');
+                            } else if (data.type === 'clarification') {
+                                document.getElementById(loadingId).remove();
+                                appendMessage("Clarification Needed:\n" + data.data, 'agent');
+                            }
+                        }
+                    }
+                }
+            } catch (err) {
+                if (document.getElementById(loadingId)) {
+                    document.getElementById(loadingId).remove();
+                }
+                appendMessage("Frontend Error: " + err.message + "\nStack: " + err.stack, 'agent');
+                console.error(err);
+            }
+            
+            document.getElementById('send-btn').disabled = false;
+            saveCurrentSession(); // Save after completion
+        }
+
+        function appendMessage(text, sender) {
+            const container = document.getElementById('chat-container');
+            const div = document.createElement('div');
+            const id = 'msg-' + Date.now() + '-' + Math.floor(Math.random() * 10000);
+            div.id = id;
+            div.className = `message ${sender}`;
+            
+            // Basic markdown parsing for bold and newlines
+            let parsedText = text
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                .replace(/\n/g, '<br>');
+            div.innerHTML = parsedText;
+            
+            container.appendChild(div);
+            
+            // Auto scroll the view container
+            const chatView = document.getElementById('chat-container');
+            chatView.scrollTop = chatView.scrollHeight;
+            return id;
+        }
+
+        function renderAgentResponse(data) {
+            const container = document.getElementById('chat-container');
+            const div = document.createElement('div');
+            div.className = 'message agent';
+
+            // 1. Show SQL
+            if (data.sql) {
+                const sqlDiv = document.createElement('div');
+                sqlDiv.className = 'agent-sql';
+                sqlDiv.innerText = "-- DataArchitectAgent SQL:\n" + data.sql;
+                div.appendChild(sqlDiv);
+            }
+
+            // 2. Render Chart dynamically if config exists
+            if (data.chart_config && Object.keys(data.chart_config).length > 0) {
+                const chartWrapper = document.createElement('div');
+                chartWrapper.className = 'chart-container chart-wrapper';
+                
+                const canvas = document.createElement('canvas');
+                const canvasId = 'chart-' + (++chartIdCounter);
+                canvas.id = canvasId;
+                chartWrapper.appendChild(canvas);
+                div.appendChild(chartWrapper);
+
+                // Need to append before Chart.js can draw
+                container.appendChild(div);
+                
+                // Ensure options are set nicely
+                if (!data.chart_config.options) data.chart_config.options = {};
+                data.chart_config.options.responsive = true;
+                data.chart_config.options.maintainAspectRatio = false;
+                
+                // Fix for agent hallucinating "chart_type" instead of "type"
+                if (data.chart_config.chart_type && !data.chart_config.type) {
+                    data.chart_config.type = data.chart_config.chart_type;
+                }
+                
+                // Set default label colors for light mode
+                Chart.defaults.color = '#86868b';
+
+                new Chart(document.getElementById(canvasId), data.chart_config);
+            } else {
+                container.appendChild(div);
+            }
+
+            // 3. Render Insights
+            if (data.insights) {
+                const insightsDiv = document.createElement('div');
+                insightsDiv.className = 'insights-text';
+                
+                // Basic markdown parsing for bold and newlines
+                let parsedText = data.insights
+                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                    .replace(/\n/g, '<br>');
+                insightsDiv.innerHTML = parsedText;
+                
+                div.appendChild(insightsDiv);
+            }
+
+            // Auto scroll the view container
+            container.scrollTop = container.scrollHeight;
+        }
+        
+        let dashboardCharts = {};
+        let activePeriod = 30;
+        let allCountries = [];
+        let selectedCountries = [];
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            const container = document.querySelector('.custom-select-container');
+            const dropdown = document.getElementById('country-dropdown');
+            if (container && !container.contains(e.target) && dropdown && dropdown.style.display === 'block') {
+                dropdown.style.display = 'none';
+            }
+        });
+
+        function toggleCountryDropdown() {
+            const dropdown = document.getElementById('country-dropdown');
+            if (dropdown.style.display === 'none' || !dropdown.style.display) {
+                dropdown.style.display = 'block';
+            } else {
+                dropdown.style.display = 'none';
+            }
+        }
+
+        function toggleAllCountries(checkbox) {
+            const checkboxes = document.querySelectorAll('.country-chk');
+            selectedCountries = [];
+            
+            checkboxes.forEach(chk => {
+                chk.checked = checkbox.checked;
+                if (checkbox.checked) selectedCountries.push(chk.value);
+            });
+            
+            updateCountryButtonText();
+            loadDashboard(activePeriod);
+        }
+
+        function toggleSingleCountry(checkbox) {
+            const selectAllChk = document.getElementById('chk-all-countries');
+            const checkboxes = document.querySelectorAll('.country-chk');
+            
+            selectedCountries = [];
+            let allChecked = true;
+            
+            checkboxes.forEach(chk => {
+                if (chk.checked) {
+                    selectedCountries.push(chk.value);
+                } else {
+                    allChecked = false;
+                }
+            });
+            
+            selectAllChk.checked = allChecked;
+            
+            updateCountryButtonText();
+            loadDashboard(activePeriod);
+        }
+        
+        function updateCountryButtonText() {
+            const btn = document.getElementById('btn-country-select');
+            if (allCountries.length > 0 && selectedCountries.length === allCountries.length) {
+                btn.innerText = 'All Countries ▼';
+            } else if (selectedCountries.length === 0 && allCountries.length > 0) {
+                btn.innerText = '0 Countries ▼';
+            } else if (selectedCountries.length === 1) {
+                btn.innerText = selectedCountries[0] + ' ▼';
+            } else {
+                btn.innerText = selectedCountries.length + ' Countries ▼';
+            }
+        }
+
+        async function initCountries() {
+            try {
+                const res = await fetch('/api/countries');
+                allCountries = await res.json();
+                
+                const list = document.getElementById('country-list');
+                list.innerHTML = '';
+                
+                allCountries.forEach(c => {
+                    const label = document.createElement('label');
+                    label.style.display = 'block';
+                    label.style.padding = '4px 8px';
+                    label.style.cursor = 'pointer';
+                    
+                    const chk = document.createElement('input');
+                    chk.type = 'checkbox';
+                    chk.className = 'country-chk';
+                    chk.value = c;
+                    chk.checked = true;
+                    chk.onchange = function() { toggleSingleCountry(this); };
+                    
+                    label.appendChild(chk);
+                    label.appendChild(document.createTextNode(' ' + c));
+                    list.appendChild(label);
+                });
+                
+                selectedCountries = [...allCountries];
+                updateCountryButtonText();
+                
+            } catch (err) {
+                console.error("Failed to load countries", err);
+            }
+        }
+
+        // Register the plugin to all charts
+        Chart.register(ChartDataLabels);
+
+        async function loadDashboard(period) {
+            activePeriod = period;
+            // Update active state on buttons
+            document.querySelectorAll('.date-slicer .slicer-btn').forEach(btn => btn.classList.remove('active'));
+            let btnId = period === 90 ? 'btn-all' : `btn-${period}d`;
+            let activeBtn = document.getElementById(btnId);
+            if(activeBtn) activeBtn.classList.add('active');
+
+            let url = `/api/dashboard?period=${period}`;
+            // If some (but not all) countries are selected, add the query param
+            if (allCountries.length > 0 && selectedCountries.length === 0) {
+                url += `&countries=__NONE__`;
+            } else if (selectedCountries.length > 0 && selectedCountries.length < allCountries.length) {
+                url += `&countries=${encodeURIComponent(selectedCountries.join(','))}`;
+            }
+
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+
+                if(data.error) {
+                    console.error("Dashboard error:", data.error);
+                    return;
+                }
+
+                // Update KPIs
+                document.getElementById('kpi-purchases').innerText = data.kpis.purchases;
+                document.getElementById('kpi-revenue').innerText = data.kpis.revenue;
+
+                // Helper to render chart
+                function renderDashChart(id, type, chartData, options) {
+                    if (dashboardCharts[id]) dashboardCharts[id].destroy();
+                    const ctx = document.getElementById(id).getContext('2d');
+                    Chart.defaults.color = '#86868b';
+                    dashboardCharts[id] = new Chart(ctx, {
+                        type: type,
+                        data: chartData,
+                        options: { ...options, responsive: true, maintainAspectRatio: false }
+                    });
+                }
+
+                // 1. Users Line
+                renderDashChart('chart-acq-sessions', 'line', {
+                    labels: data.timeseries.labels,
+                    datasets: [
+                        {
+                            label: 'Total Users',
+                            data: data.timeseries.users,
+                            borderColor: '#4285F4',
+                            backgroundColor: 'rgba(66, 133, 244, 0.1)',
+                            fill: true,
+                            tension: 0.3
+                        },
+                        {
+                            label: 'New Users',
+                            data: data.timeseries.new_users,
+                            borderColor: '#34A853',
+                            backgroundColor: '#34A853',
+                            fill: true,
+                            tension: 0.3
+                        }
+                    ]
+                }, {
+                    plugins: {
+                        datalabels: {
+                            display: false
+                        }
+                    }
+                });
+
+                // 2. Channels Bar
+                renderDashChart('chart-acq-channels', 'bar', {
+                    labels: data.channels.labels,
+                    datasets: [{
+                        label: 'New Users',
+                        data: data.channels.new_users,
+                        backgroundColor: '#34A853'
+                    }]
+                }, { 
+                    indexAxis: 'y',
+                    plugins: {
+                        datalabels: {
+                            color: '#fff',
+                            formatter: (value, ctx) => {
+                                let total = ctx.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+                                if (total === 0) return '0%';
+                                let percentage = ((value / total) * 100).toFixed(1) + '%';
+                                return percentage;
+                            },
+                            font: {
+                                weight: 'bold'
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let value = context.raw;
+                                    let total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    if (total === 0) return context.dataset.label + ': ' + value + ' (0%)';
+                                    let percentage = ((value / total) * 100).toFixed(1) + '%';
+                                    return context.dataset.label + ': ' + value + ' (' + percentage + ')';
+                                }
+                            }
+                        }
+                    }
+                });
+
+                // 3. Engagement Rate vs Avg Time
+                renderDashChart('chart-eng-bounce', 'line', {
+                    labels: data.timeseries.labels,
+                    datasets: [
+                        {
+                            label: 'Engagement Rate (%)',
+                            data: data.timeseries.engagement_rates,
+                            borderColor: '#EA4335',
+                            backgroundColor: '#EA4335',
+                            yAxisID: 'y',
+                            tension: 0.3
+                        },
+                        {
+                            label: 'Avg Eng. Time (s)',
+                            data: data.timeseries.avg_engagement_times,
+                            borderColor: '#4285F4',
+                            backgroundColor: '#4285F4',
+                            yAxisID: 'y1',
+                            tension: 0.3
+                        }
+                    ]
+                }, {
+                    scales: {
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            grid: {
+                                drawOnChartArea: false, 
+                            },
+                        }
+                    },
+                    plugins: {
+                        datalabels: {
+                            display: false
+                        }
+                    }
+                });
+
+                // 4. Mid Funnel Donut
+                renderDashChart('chart-eng-device', 'doughnut', {
+                    labels: data.events.labels,
+                    datasets: [{
+                        data: data.events.counts,
+                        backgroundColor: ['#4285F4', '#FBBC05', '#34A853', '#A142F4', '#EA4335']
+                    }]
+                }, {
+                    plugins: {
+                        datalabels: {
+                            color: '#fff',
+                            formatter: (value, ctx) => {
+                                if (value === 0) return '';
+                                let total = ctx.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+                                if (total === 0) return '';
+                                let percentage = ((value / total) * 100).toFixed(1) + '%';
+                                return percentage;
+                            },
+                            font: {
+                                weight: 'bold'
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let value = context.raw;
+                                    let total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    if (total === 0) return context.label + ': ' + value + ' (0%)';
+                                    let percentage = ((value / total) * 100).toFixed(1) + '%';
+                                    return context.label + ': ' + value + ' (' + percentage + ')';
+                                }
+                            }
+                        }
+                    }
+                });
+
+                // 5. SVG Funnel Drop-off Rate Exploration
+                let fLabels = ['Session Start', 'View Item', 'Add to Cart', 'Purchase'];
+                let fCounts = data.funnel.counts;
+                let funnelColors = ['#4285F4', '#34A853', '#FBBC05', '#EA4335']; // Google colors
+                
+                const container = document.getElementById('chart-conv-funnel-container');
+                container.innerHTML = '';
+                if (fCounts && fCounts.length > 0) {
+                    const svgNS = "http://www.w3.org/2000/svg";
+                    const svg = document.createElementNS(svgNS, "svg");
+                    svg.setAttribute("width", "100%");
+                    svg.setAttribute("height", "100%");
+                    svg.setAttribute("viewBox", "0 0 800 300");
+                    svg.style.overflow = "visible";
+                    
+                    const maxCount = fCounts[0];
+                    const segmentHeight = 300 / fCounts.length;
+                    const funnelCenterX = 550;
+                    const maxFunnelWidth = 400;
+                    
+                    let currentY = 0;
+                    
+                    for (let i = 0; i < fCounts.length; i++) {
+                        let topWidth = (fCounts[i] / maxCount) * maxFunnelWidth;
+                        let bottomWidth = 0;
+                        if (i < fCounts.length - 1) {
+                            bottomWidth = (fCounts[i+1] / maxCount) * maxFunnelWidth;
+                        } else {
+                            bottomWidth = topWidth * 0.2; // Taper the final point slightly
+                        }
+                        
+                        let topLeftX = funnelCenterX - topWidth / 2;
+                        let topRightX = funnelCenterX + topWidth / 2;
+                        let bottomLeftX = funnelCenterX - bottomWidth / 2;
+                        let bottomRightX = funnelCenterX + bottomWidth / 2;
+                        
+                        // Trapezoid
+                        const points = `${topLeftX},${currentY} ${topRightX},${currentY} ${bottomRightX},${currentY + segmentHeight} ${bottomLeftX},${currentY + segmentHeight}`;
+                        const polygon = document.createElementNS(svgNS, "polygon");
+                        polygon.setAttribute("points", points);
+                        polygon.setAttribute("fill", funnelColors[i % funnelColors.length]);
+                        svg.appendChild(polygon);
+                        
+                        // Text Labels
+                        let textY = currentY + segmentHeight / 2;
+                        let textX = 300; 
+                        
+                        let prev = i > 0 ? fCounts[i-1] : fCounts[0];
+                        let curr = fCounts[i];
+                        let dropOffRate = prev > 0 ? (((prev - curr) / prev) * 100).toFixed(1) : 0;
+                        
+                        let dropOffText = i === 0 ? ` (100%)` : ` (${dropOffRate}% Drop-off)`;
+                        
+                        const text = document.createElementNS(svgNS, "text");
+                        text.setAttribute("x", textX);
+                        text.setAttribute("y", textY);
+                        text.setAttribute("dominant-baseline", "middle");
+                        text.setAttribute("text-anchor", "end");
+                        text.setAttribute("font-family", "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif");
+                        text.setAttribute("font-size", "16px");
+                        text.setAttribute("font-weight", "500");
+                        text.setAttribute("fill", "var(--text-primary)");
+                        text.textContent = fLabels[i] + dropOffText;
+                        svg.appendChild(text);
+                        
+                        // Connecting Line
+                        let funnelLeftEdgeX = (topLeftX + bottomLeftX) / 2;
+                        const line = document.createElementNS(svgNS, "line");
+                        line.setAttribute("x1", textX + 15);
+                        line.setAttribute("y1", textY);
+                        line.setAttribute("x2", funnelLeftEdgeX);
+                        line.setAttribute("y2", textY);
+                        line.setAttribute("stroke", funnelColors[i % funnelColors.length]);
+                        line.setAttribute("stroke-width", "2");
+                        svg.appendChild(line);
+                        
+                        currentY += segmentHeight;
+                    }
+                    container.appendChild(svg);
+                }
+
+                // 6. ECR Line
+                renderDashChart('chart-conv-ecr', 'line', {
+                    labels: data.timeseries.labels,
+                    datasets: [{
+                        label: 'ECR (%)',
+                        data: data.timeseries.ecr,
+                        borderColor: '#FBBC05',
+                        tension: 0.3
+                    }]
+                }, {
+                    plugins: {
+                        datalabels: { display: false }
+                    }
+                });
+
+                // 7. Cohort Heatmap
+                let cohortHtml = '<table style="width: 100%; border-collapse: collapse; text-align: center; font-size: 13px;">';
+                cohortHtml += '<thead><tr><th style="padding: 12px 8px; border-bottom: 2px solid #eee; text-align: left; color: var(--text-secondary);">Cohort Week</th><th style="padding: 12px 8px; border-bottom: 2px solid #eee; color: var(--text-secondary);">Users</th><th style="padding: 12px 8px; border-bottom: 2px solid #eee; color: var(--text-secondary);">Day 1</th><th style="padding: 12px 8px; border-bottom: 2px solid #eee; color: var(--text-secondary);">Day 7</th><th style="padding: 12px 8px; border-bottom: 2px solid #eee; color: var(--text-secondary);">Day 30</th></tr></thead>';
+                cohortHtml += '<tbody>';
+                
+                data.cohorts.forEach(row => {
+                    let d1Pct = row.users > 0 ? (row.day_1 / row.users) : 0;
+                    let d7Pct = row.users > 0 ? (row.day_7 / row.users) : 0;
+                    let d30Pct = row.users > 0 ? (row.day_30 / row.users) : 0;
+                    
+                    let getBg = (pct) => `rgba(66, 133, 244, ${Math.min(pct * 5, 1)})`; // Scale up so small % are visible
+                    let getColor = (pct) => (pct * 5) > 0.5 ? '#fff' : 'var(--text-primary)';
+                    
+                    cohortHtml += `<tr>
+                        <td style="padding: 12px 8px; border-bottom: 1px solid #eee; text-align: left; font-weight: 500;">${row.cohort}</td>
+                        <td style="padding: 12px 8px; border-bottom: 1px solid #eee;">${row.users.toLocaleString()}</td>
+                        <td style="padding: 12px 8px; border-bottom: 1px solid #eee; background: ${getBg(d1Pct)}; color: ${getColor(d1Pct)};">${(d1Pct*100).toFixed(1)}%</td>
+                        <td style="padding: 12px 8px; border-bottom: 1px solid #eee; background: ${getBg(d7Pct)}; color: ${getColor(d7Pct)};">${(d7Pct*100).toFixed(1)}%</td>
+                        <td style="padding: 12px 8px; border-bottom: 1px solid #eee; background: ${getBg(d30Pct)}; color: ${getColor(d30Pct)};">${(d30Pct*100).toFixed(1)}%</td>
+                    </tr>`;
+                });
+                
+                cohortHtml += '</tbody></table>';
+                document.getElementById('cohort-heatmap').innerHTML = cohortHtml;
+
+            } catch (err) {
+                console.error("Failed to load dashboard:", err);
+            }
+        }
+        
+        // Initial render
+        renderConversationList();
+        if (currentTab === 'dashboard') {
+            initCountries().then(() => {
+                loadDashboard(30);
+            });
+        }
+    </script>
+</body>
+</html>

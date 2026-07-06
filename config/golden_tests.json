@@ -1,0 +1,182 @@
+[
+  {
+    "id": "clarification-ambiguous-metric",
+    "target_agent": "clarification",
+    "natural_language_query": "How many people are interested in buying, broken down by channel?",
+    "expected_trajectory": [
+      "Given the user asks an ambiguous question about 'interest'",
+      "When the ClarificationAgent processes the intent",
+      "Then it must consult the data dictionary and map 'interest' to add_to_cart or begin_checkout"
+    ],
+    "expected_output": "A reasoning trace explicitly defining 'interested' as begin_checkout and proposing a bar chart comparing channels.",
+    "score_thresholds": { "reasoning": 85 }
+  },
+  {
+    "id": "clarification-time-series",
+    "target_agent": "clarification",
+    "natural_language_query": "Show me daily active users.",
+    "expected_trajectory": [
+      "Given the user asks for daily active users",
+      "When the ClarificationAgent processes the intent",
+      "Then it must recognize the time-series requirement"
+    ],
+    "expected_output": "A reasoning trace specifying grouping by event_date and proposing a line chart.",
+    "score_thresholds": { "reasoning": 85 }
+  },
+  {
+    "id": "clarification-missing-data",
+    "target_agent": "clarification",
+    "natural_language_query": "What is my Facebook Ad Spend?",
+    "expected_trajectory": [
+      "Given the user asks for ad spend",
+      "When the ClarificationAgent checks the ga4_data_dictionary.md",
+      "Then it must realize ad spend data does not exist in the schema"
+    ],
+    "expected_output": "A reasoning trace stating the dataset lacks ad spend metrics and asking the user to adjust the request.",
+    "score_thresholds": { "reasoning": 85 }
+  },
+  {
+    "id": "dataarchitect-strict-raw-counts",
+    "target_agent": "data_architect",
+    "natural_language_query": "Calculate E-commerce Conversion Rate.",
+    "expected_trajectory": [
+      "Given the clarified intent asks for a ratio (Conversion Rate)",
+      "When the DataArchitectAgent writes SQL",
+      "Then it must NOT calculate total_purchases / total_sessions in SQL"
+    ],
+    "expected_output": "SQL that strictly returns raw total_sessions and total_purchases.",
+    "score_thresholds": { "reasoning": 100 }
+  },
+  {
+    "id": "dataarchitect-date-filtering",
+    "target_agent": "data_architect",
+    "natural_language_query": "Show me data for January 2021.",
+    "expected_trajectory": [
+      "Given a date filter constraint in the intent",
+      "When the DataArchitectAgent writes the WHERE clause",
+      "Then it must use the exact string _TABLE_SUFFIX BETWEEN '20210101' AND '20210131'"
+    ],
+    "expected_output": "SQL with the correct _TABLE_SUFFIX filter applied.",
+    "score_thresholds": { "reasoning": 100 }
+  },
+  {
+    "id": "dataarchitect-unnest-items",
+    "target_agent": "data_architect",
+    "natural_language_query": "What are the top selling products?",
+    "expected_trajectory": [
+      "Given the intent requires item-level data",
+      "When the DataArchitectAgent writes the SELECT clause",
+      "Then it must use the UNNEST(items) syntax"
+    ],
+    "expected_output": "SQL that properly unnests the items array to group by item_name and sum item_revenue.",
+    "score_thresholds": { "reasoning": 100 }
+  },
+  {
+    "id": "concierge-visual-memory",
+    "target_agent": "concierge",
+    "natural_language_query": "Breakdown products by revenue (use pie chart)",
+    "expected_trajectory": [
+      "Given the visual memory bank contains a prior pie chart for a semantic match",
+      "When the ConciergeAgent builds the config",
+      "Then it must override its default choice and use pie"
+    ],
+    "expected_output": "JSON output with type: 'pie'.",
+    "score_thresholds": { "reasoning": 100 }
+  },
+  {
+    "id": "concierge-anti-truncation",
+    "target_agent": "concierge",
+    "natural_language_query": "Show me all 15 channels.",
+    "expected_trajectory": [
+      "Given a large number of categories",
+      "When the ConciergeAgent defines the chart structure",
+      "Then it must not attempt to filter, write out, or group 'others' in the data array"
+    ],
+    "expected_output": "JSON configuration template that leaves the data arrays empty for the deterministic Python injector.",
+    "score_thresholds": { "reasoning": 100 }
+  },
+  {
+    "id": "concierge-multi-series",
+    "target_agent": "concierge",
+    "natural_language_query": "Time-series data grouped by channel.",
+    "expected_trajectory": [
+      "Given data containing both a date column and a dimension column",
+      "When the ConciergeAgent outputs the layout",
+      "Then it must structure it for multiple datasets"
+    ],
+    "expected_output": "JSON configuration specifying a line chart ready for multi-series injection.",
+    "score_thresholds": { "reasoning": 100 }
+  },
+  {
+    "id": "insights-actionable-recommendation",
+    "target_agent": "insights",
+    "natural_language_query": "Data shows 90% cart abandonment on organic search.",
+    "expected_trajectory": [
+      "Given a stark drop-off in the mid-funnel data",
+      "When the InsightsAgent analyzes the math",
+      "Then it must provide a business-focused recommendation, not just restate the numbers"
+    ],
+    "expected_output": "Text suggesting UX improvements or retargeting strategies specifically for organic traffic.",
+    "score_thresholds": { "reasoning": 85 }
+  },
+  {
+    "id": "insights-positive-reinforcement",
+    "target_agent": "insights",
+    "natural_language_query": "Data shows a 50% month-over-month increase in revenue.",
+    "expected_trajectory": [
+      "Given highly positive metrics",
+      "When the InsightsAgent writes the insight",
+      "Then it must highlight the winning driver"
+    ],
+    "expected_output": "Text clearly identifying the specific channel or category driving the growth.",
+    "score_thresholds": { "reasoning": 85 }
+  },
+  {
+    "id": "insights-hallucination-avoidance",
+    "target_agent": "insights",
+    "natural_language_query": "Data shows exactly 100 purchases.",
+    "expected_trajectory": [
+      "Given a specific set of raw numbers",
+      "When the InsightsAgent writes the summary",
+      "Then it must not invent percentages, benchmarks, or external factors not present in the data"
+    ],
+    "expected_output": "Text that strictly uses the provided metrics without hallucinating external context.",
+    "score_thresholds": { "reasoning": 100 }
+  },
+  {
+    "id": "integrity-high-null-rate",
+    "target_agent": "integrity",
+    "natural_language_query": "Target date 2020-11-01 (known null revenue data).",
+    "expected_trajectory": [
+      "Given the deterministic script returns a null revenue rate > 20%",
+      "When the IntegrityAgent evaluates the trust score",
+      "Then it must trigger a FAIL status to halt execution"
+    ],
+    "expected_output": "JSON containing status: FAIL, reason: Null revenue rate exceeds 20% threshold.",
+    "score_thresholds": { "reasoning": 100 }
+  },
+  {
+    "id": "integrity-clean-data",
+    "target_agent": "integrity",
+    "natural_language_query": "Target date 2021-01-31 (clean data).",
+    "expected_trajectory": [
+      "Given the deterministic script returns 0% nulls",
+      "When the IntegrityAgent evaluates the trust score",
+      "Then it must trigger a PASS status"
+    ],
+    "expected_output": "JSON containing status: PASS, reason: Data integrity confirmed.",
+    "score_thresholds": { "reasoning": 100 }
+  },
+  {
+    "id": "integrity-exception-handling",
+    "target_agent": "integrity",
+    "natural_language_query": "Target date 2022-01-01 (table does not exist).",
+    "expected_trajectory": [
+      "Given the query returns a 'table not found' error",
+      "When the IntegrityAgent receives the error context",
+      "Then it must gracefully fail rather than crashing the pipeline"
+    ],
+    "expected_output": "JSON containing status: FAIL, reason: Table suffix not found in dataset.",
+    "score_thresholds": { "reasoning": 100 }
+  }
+]

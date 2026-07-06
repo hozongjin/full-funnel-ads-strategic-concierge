@@ -1,0 +1,84 @@
+{
+    "memory_bank": [
+        {
+            "query_semantic_match": "Are users failing more at product decision or during checkout?",
+            "layout_template": "bar"
+        },
+        {
+            "query_semantic_match": "Execute this exact approved plan:\nUnderstood. I will proceed with the analysis of \"window shoppers\" (users who triggered `view_item` but did not trigger `add_to_cart` or `purchase` in the same session), broken down by the specific items they viewed.\n\n**Plan:**\n1. **Metric:** Count of unique `user_pseudo_id`s per `item_name`.\n2. **Filter:** Only include sessions where `view_item` occurred, but `add_to_cart` and `purchase` did not occur for that user.\n3. **Visualization:** A **bar chart** showing the top 10 items with the highest number of unique \"window shoppers.\"\n\nDoes this look correct? Type 'yes' to proceed or tell me what to adjust.",
+            "layout_template": "bar"
+        },
+        {
+            "query_semantic_match": "Execute this exact approved plan:\nTo analyze the difference between \"browsing\" and \"purchase intent,\" I will classify your users based on their deepest interaction with the site as follows:\n\n*   **Browsing:** Users who triggered a `view_item` event but did not proceed to add an item to their cart or initiate checkout.\n*   **Purchase Intent:** Users who triggered an `add_to_cart` or `begin_checkout` event, indicating they are actively considering a transaction.\n\nI will calculate the total unique users (`user_pseudo_id`) for each of these two segments to show the split of your audience.\n\nI propose using a **doughnut chart** to visualize this, as it will clearly show the percentage split between casual browsers and high-intent shoppers.\n\nDoes this look correct? Type 'yes' to proceed or tell me what to adjust.",
+            "layout_template": "doughnut"
+        },
+        {
+            "query_semantic_match": "Execute this exact approved plan:\nUnderstood. I will update the classification logic to create three mutually exclusive segments for your users based on their deepest interaction with your store:\n\n1.  **Browsing:** Users who triggered a `view_item` event but did NOT trigger an `add_to_cart`, `begin_checkout`, or `purchase` event.\n2.  **Purchase Intent:** Users who triggered an `add_to_cart` or `begin_checkout` event, but did NOT trigger a `purchase` event.\n3.  **Purchased:** Users who successfully triggered a `purchase` event.\n\nI will calculate the unique `user_pseudo_id` count for each of these segments to show the funnel progression from casual interest to conversion.\n\n**Proposed Visualization:**\nI will use a **doughnut chart** to display the distribution of your total user base across these three stages. This will allow you to see the \"leakage\" between browsing, intent, and final purchase at a glance.\n\nDoes this look correct? Type 'yes' to proceed or tell me what to adjust.",
+            "layout_template": "doughnut"
+        },
+        {
+            "query_semantic_match": "Execute this exact approved plan:\nUnderstood. I have updated the plan to reflect your requirements for daily granularity and specific metric definitions.\n\n**Updated Data Plan:**\n\n*   **Metric**: `Daily Conversions` (defined as the count of unique `transaction_id` values associated with `purchase` events per day).\n*   **Dimension**: `traffic_source.source` / `traffic_source.medium`.\n*   **Time Granularity**: Daily (`event_date`).\n*   **Definition**: I will calculate the number of successful purchases for each traffic source for every individual day in the dataset. This will highlight which channels are driving daily sales volume and allow us to spot fluctuations or consistency in their performance.\n\n**Proposed Visualization**:\nI will use a **line chart**. The X-axis will represent the date, the Y-axis will represent the count of daily conversions, and each line will represent a distinct traffic source. This will allow you to compare the daily conversion performance of your channels side-by-side.\n\nDoes this look correct? Type 'yes' to proceed or tell me what to adjust.",
+            "layout_template": "line"
+        },
+        {
+            "query_semantic_match": "Execute this exact approved plan:\nTo analyze which traffic sources drive consistent conversions over time, I will structure the data as follows:\n\n**1. Definitions & Logic:**\n*   **Traffic Source:** I will use the `traffic_source.source` and `traffic_source.medium` fields to identify where your users are coming from.\n*   **Conversions:** I will define this as the count of `purchase` events.\n*   **Consistency:** To measure \"consistency over time,\" I will aggregate the number of purchases by traffic source on a **weekly** basis. This allows us to see if specific channels provide steady volume or if they are prone to spikes and drops.\n\n**2. Proposed Visualization:**\n*   **Chart Type:** **Line Chart**. \n    *   The X-axis will represent time (weeks).\n    *   The Y-axis will represent the total number of `purchase` events.\n    *   Each line will represent a unique traffic source, allowing us to compare performance trends side-by-side.\n\n**3. Data Availability Note:**\nPlease note that this analysis relies on the `traffic_source` record being correctly populated in your GA4 events. If some sessions have missing or \"direct\" traffic source data, they will be grouped accordingly.\n\nDoes this look correct? Type 'yes' to proceed or tell me what to adjust.",
+            "layout_template": "line"
+        },
+        {
+            "query_semantic_match": "Execute this exact approved plan:\nTo analyze which traffic sources drive consistent conversions, I will define the query as follows:\n\n*   **Metric**: **E-commerce Conversion Rate (ECR)**, calculated as `Total purchase / Total Sessions`.\n*   **Dimension**: `traffic_source.source` (the origin of the traffic).\n*   **Time Component**: `event_date` (to observe consistency over time).\n*   **Strategy**: I will group the data by `traffic_source.source` and `event_date` to identify which sources maintain a steady conversion rate rather than just one-off spikes.\n\n**Proposed Visualization**: A **line chart** is best for this, where the X-axis represents `event_date`, the Y-axis represents the `ECR`, and each line represents a unique `traffic_source.source`. This will allow you to see the stability (consistency) of each channel visually.\n\nDoes this look correct? Type 'yes' to proceed or tell me what to adjust.",
+            "layout_template": "line"
+        },
+        {
+            "query_semantic_match": "Execute this exact approved plan:\nTo analyze which traffic sources drive consistent conversions over time, I will structure the data as follows:\n\n**Definitions:**\n*   **Traffic Source:** I will use the `traffic_source.source` and `traffic_source.medium` fields from the GA4 schema.\n*   **Conversions:** I will define these as the count of `purchase` events.\n*   **Consistency:** To measure \"consistency over time,\" I will aggregate the number of purchases by traffic source on a **weekly** basis. This allows us to see which channels maintain a steady or growing trend rather than just one-off spikes.\n\n**Proposed Visualization:**\nI propose a **Line Chart** where the X-axis represents time (weeks) and the Y-axis represents the number of purchases, with each line representing a different traffic source. This will clearly highlight which sources maintain consistent conversion volume versus those that are volatile.\n\nDoes this look correct? Type 'yes' to proceed or tell me what to adjust.",
+            "layout_template": "line"
+        },
+        {
+            "query_semantic_match": "Execute this exact approved plan:\nTo provide you with this analysis, I have mapped your request to the following data plan:\n\n*   **Metric**: Bounce Rate (calculated as `1 - (Engaged Sessions / Total Sessions)`).\n*   **Dimension**: Marketing Channel (`traffic_source.medium`).\n*   **Timeframe**: Last 30 days.\n*   **Visualization**: I will use a **bar chart** to compare the bounce rate across each marketing channel, allowing you to easily identify which channels are driving the most engaged traffic.\n\nDoes this look correct? Type 'yes' to proceed or tell me what to adjust.",
+            "layout_template": "bar"
+        },
+        {
+            "query_semantic_match": "Can you show me the bounce rate across all of our marketing channels over the last 30 days?",
+            "layout_template": "bar"
+        },
+        {
+            "query_semantic_match": "Which top 5 countries have the highest conversion rate, and how many total sessions did they generate?",
+            "layout_template": "bar"
+        },
+        {
+            "query_semantic_match": "Execute this exact approved plan:\nTo provide you with the bounce rate by marketing channel for the last 30 days, I will define the metrics and dimensions as follows:\n\n*   **Metric**: Bounce Rate, calculated as `1 - (Engaged Sessions / Total Sessions)`.\n*   **Dimension**: Marketing Channel (derived from `traffic_source.medium`).\n*   **Timeframe**: The last 30 days based on `event_date`.\n*   **Visualization**: I will use a **bar chart** to compare the bounce rate across each marketing channel, allowing you to easily identify which channels are driving the most versus the least engaged traffic.\n\nDoes this look correct? Type 'yes' to proceed or tell me what to adjust.",
+            "layout_template": "bar"
+        },
+        {
+            "query_semantic_match": "Execute this exact approved plan:\nTo provide you with this analysis, I will define your request based on the GA4 dataset schema as follows:\n\n*   **Metric 1 (Conversion Rate)**: Calculated as `Total purchase` events divided by `Total Sessions` per country.\n*   **Metric 2 (Total Sessions)**: Calculated as the count of unique sessions per country.\n*   **Dimension**: `geo.country`.\n*   **Visualization**: I will use a **bar chart** to display the top 5 countries by conversion rate, with the total session count included as a secondary data point for context.\n\nDoes this look correct? Type 'yes' to proceed or tell me what to adjust.",
+            "layout_template": "bar"
+        },
+        {
+            "query_semantic_match": "Execute this exact approved plan:\nTo analyze the performance of your Organic Search traffic, I will define the data plan as follows:\n\n*   **Metric 1 (Bounce Rate)**: Calculated as `1 - (Engaged Sessions / Total Sessions)` for the `organic` medium.\n*   **Metric 2 (Conversion Rate)**: Calculated as `Total purchase / Total Sessions` for the `organic` medium.\n*   **Dimension**: I will group these metrics by `country` (specifically filtering for the United States and the United Kingdom).\n*   **Visualization**: I will use a **bar chart** to compare these two metrics side-by-side for both countries, allowing you to see which market has higher engagement and higher conversion efficiency within the organic search channel.\n\nDoes this look correct? Type 'yes' to proceed or tell me what to adjust.",
+            "layout_template": "bar"
+        },
+        {
+            "query_semantic_match": "Execute this exact approved plan:\nTo analyze this, I will define your request using the following parameters based on our GA4 data schema:\n\n*   **Traffic Source**: Filtered to `traffic_source.medium = 'organic'`.\n*   **Metrics**: \n    *   **Bounce Rate**: Calculated as `1 - (Engaged Sessions / Total Sessions)`.\n    *   **Conversion Rate**: Calculated as `Total purchase / Total Sessions`.\n*   **Grouping Dimension**: I will group the data by `geo.country` (specifically 'United States' and 'United Kingdom').\n*   **Visualization**: I will use a **bar chart** to compare the Bounce Rate and Conversion Rate side-by-side for the two countries.\n\nDoes this look correct? Type 'yes' to proceed or tell me what to adjust.",
+            "layout_template": "bar"
+        },
+        {
+            "query_semantic_match": "Execute this exact approved plan:\nTo analyze this, I will define the metrics and dimensions as follows:\n\n*   **Traffic Segment:** Filtered by `traffic_source.medium = 'organic'`.\n*   **Dimensions:** `geo.country` (specifically 'United States' and 'United Kingdom').\n*   **Metrics:**\n    *   **Bounce Rate:** Calculated as `1 - (Engaged Sessions / Total Sessions)`.\n    *   **Conversion Rate:** Calculated as `Total purchase / Total Sessions`.\n*   **Visualization:** I will use a **grouped bar chart** to compare the Bounce Rate and Conversion Rate side-by-side for the United States versus the United Kingdom.\n\nDoes this look correct? Type 'yes' to proceed or tell me what to adjust.",
+            "layout_template": "bar"
+        },
+        {
+            "query_semantic_match": "Execute this exact approved plan:\nTo provide you with the bounce rate by marketing channel for the last 30 days, I have mapped your request to the following data plan:\n\n*   **Metric**: Bounce Rate, calculated as `1 - (Engaged Sessions / Total Sessions)`.\n    *   *Engaged Sessions* are defined as sessions with `session_engaged = 1` or a `user_engagement` event.\n*   **Dimension**: Marketing Channel (derived from `traffic_source.medium` and `traffic_source.source`).\n*   **Timeframe**: Last 30 days (based on `event_date`).\n*   **Visualization**: I will use a **bar chart** to compare the bounce rate across each marketing channel, allowing you to easily identify which channels are driving the most engaged traffic.\n\nDoes this look correct? Type 'yes' to proceed or tell me what to adjust.",
+            "layout_template": "bar"
+        },
+        {
+            "query_semantic_match": "Execute this exact approved plan:\nTo analyze this, I will define the metrics as follows:\n\n*   **Conversion Rate**: Calculated as `Total Purchases / Total Sessions` per country.\n*   **Total Sessions**: Calculated as `COUNT(DISTINCT CONCAT(user_pseudo_id, ga_session_id))` per country.\n*   **Grouping**: I will group the data by `geo.country`.\n*   **Visualization**: I will use a **bar chart** to display the top 5 countries by conversion rate, with the total session count represented as a secondary metric (or tooltip detail) to provide context on the volume of traffic behind those rates.\n\nDoes this look correct? Type 'yes' to proceed or tell me what to adjust.",
+            "layout_template": "bar"
+        },
+        {
+            "query_semantic_match": "Execute this exact approved plan:\nTo analyze the performance of your Organic Search traffic for the United States versus the United Kingdom, I have defined the following plan:\n\n*   **Metrics**: \n    *   **Bounce Rate**: Calculated as `1 - (Engaged Sessions / Total Sessions)`.\n    *   **E-commerce Conversion Rate (ECR)**: Calculated as `Total purchase / Total Sessions`.\n*   **Filters**: \n    *   Traffic Source: `medium = 'organic'`.\n    *   Geography: `country` restricted to 'United States' and 'United Kingdom'.\n*   **Visualization**: I will use a **grouped bar chart** to compare the Bounce Rate and ECR side-by-side for both countries, allowing you to easily identify which market is more engaged and which is converting more effectively.\n\nDoes this look correct? Type 'yes' to proceed or tell me what to adjust.",
+            "layout_template": "bar"
+        },
+        {
+            "query_semantic_match": "Execute this exact approved plan:\nTo provide a clear comparison, I will analyze the **Bounce Rate** and **E-commerce Conversion Rate (ECR)** for your **Organic Search** traffic in the **United States** and the **United Kingdom** against the **Global Average** (all traffic sources combined).\n\nHere is the plan:\n*   **Metrics:** \n    *   **Bounce Rate:** Calculated as `1 - (Engaged Sessions / Total Sessions)`.\n    *   **E-commerce Conversion Rate (ECR):** Calculated as `Total purchase / Total Sessions`.\n*   **Segmentation:** I will group the data by **Region** (US, UK, and Global) to allow for a direct side-by-side comparison.\n*   **Visualization:** I will use a **grouped bar chart** to visualize these two metrics, as it is the most effective way to compare specific segments against a global baseline.\n\nDoes this look correct? Type 'yes' to proceed or tell me what to adjust.",
+            "layout_template": "bar"
+        }
+    ]
+}

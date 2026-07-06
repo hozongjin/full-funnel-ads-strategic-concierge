@@ -1,0 +1,114 @@
+# =============================================================================
+# MASTER DATA FILE — Financial Cost Inputs & Assumptions
+# Full-Funnel Ads Strategic Scenario Concierge
+# =============================================================================
+# PURPOSE: This file is the single source of truth for all financial assumptions
+# and cost inputs that cannot be derived from the GA4 dataset.
+#
+# HOW TO EDIT: Update any value below and save. The CalculationAgent will
+# read this file at runtime before performing any financial modeling.
+#
+# LAST UPDATED: 2026-06-30
+# =============================================================================
+
+
+# -----------------------------------------------------------------------------
+# 1. AD SPEND BY CHANNEL (Monthly Budget Allocation)
+# -----------------------------------------------------------------------------
+# The traffic_source.medium values from the GA4 dataset are used as keys.
+# Set the monthly ad spend in USD for each channel medium.
+# Set to 0 if you do not run ads on that channel.
+# Add new channels as needed — match the exact medium string from GA4.
+# -----------------------------------------------------------------------------
+channel_spend_usd_monthly:
+  cpc:          5000.00    # Google Ads / Paid Search (cost-per-click campaigns)
+  email:         500.00    # Email marketing platform costs (ESP fees + send costs)
+  referral:      200.00    # Affiliate or referral partner payouts
+  social:       1500.00    # Paid social (Meta, LinkedIn, TikTok, etc.)
+  display:       800.00    # Programmatic / Display network spend
+  video:        1200.00    # YouTube / video ad spend
+  organic:         0.00    # SEO — no direct spend (use SEO tool cost below if needed)
+  "(none)":        0.00    # Direct traffic — no spend attributed
+
+
+# -----------------------------------------------------------------------------
+# 2. ASSUMED CPC BY CHANNEL (Cost Per Click — Proxy Rate)
+# -----------------------------------------------------------------------------
+# Used as a FALLBACK when monthly spend totals are not available.
+# The CalculationAgent will use: Estimated Spend = Sessions × CPC_rate
+# Mark as 0.00 for channels where CPC-based estimation is not applicable.
+# -----------------------------------------------------------------------------
+channel_cpc_proxy_usd:
+  cpc:          1.20    # Avg CPC for paid search on Google Ads
+  email:        0.05    # Low CPC proxy (mostly volume-based channel)
+  referral:     0.30    # Avg referral click cost
+  social:       0.85    # Avg paid social CPC
+  display:      0.25    # Display network typical CPC
+  video:        0.10    # Video ads (CPV-based, treated as low CPC proxy)
+  organic:      0.00    # Not applicable — no click cost
+  "(none)":     0.00    # Not applicable — direct traffic
+
+
+# -----------------------------------------------------------------------------
+# 3. GROSS MARGIN BY PRODUCT CATEGORY (%)
+# -----------------------------------------------------------------------------
+# Maps to items.item_category in the GA4 dataset.
+# Enter as a decimal (e.g., 0.45 = 45% gross margin).
+# The CalculationAgent will use: Gross Profit = Revenue × margin_rate
+# Add or rename categories to match your actual item_category values in GA4.
+# Run this query to discover your categories:
+#   SELECT DISTINCT items.item_category FROM `events_*` LIMIT 100
+# -----------------------------------------------------------------------------
+gross_margin_by_category:
+  Apparel:          0.55    # Example: 55% margin on clothing
+  Accessories:      0.60    # Example: 60% margin on accessories
+  Office:           0.40    # Example: 40% margin on office products
+  Electronics:      0.25    # Example: 25% margin on electronics
+  Lifestyle:        0.50    # Example: 50% margin on lifestyle goods
+  Sale:             0.20    # Example: Lower margin on discounted/sale items
+  default:          0.40    # Fallback blended margin for uncategorised products
+
+
+# -----------------------------------------------------------------------------
+# 4. FINANCIAL MODELING ASSUMPTIONS
+# -----------------------------------------------------------------------------
+# These are the global assumptions used in What-If scenario modeling.
+# Adjust these to match your business context before running simulations.
+# -----------------------------------------------------------------------------
+assumptions:
+  # Date range for "current period" baseline (used when user does not specify)
+  default_date_range:
+    start: "20210101"
+    end:   "20210131"
+
+  # For ROAS calculation
+  # spend_input_method options:
+  #   "monthly_budget"  — Use channel_spend_usd_monthly divided by 30 per day
+  #   "cpc_proxy"       — Estimate spend from Sessions × channel_cpc_proxy_usd
+  spend_input_method: "monthly_budget"
+
+  # For budget reallocation scenarios (e.g., "shift 20% from cpc to email")
+  # Defines the increment % steps available in the Spend Slider UI
+  reallocation_step_pct: 0.05    # 5% increments
+
+  # CVR baseline source
+  # "dataset" — calculate from actual GA4 purchase/session data
+  # "manual"  — use the override value below
+  cvr_source: "dataset"
+  cvr_manual_override: 0.025    # Only used if cvr_source = "manual" (e.g., 2.5%)
+
+  # Minimum ROAS threshold for "acceptable" campaign performance
+  roas_alert_threshold: 2.0     # Flag any channel with ROAS below this value
+
+
+# -----------------------------------------------------------------------------
+# 5. OVERHEAD & FIXED COSTS (Optional — for full P&L modeling in later phases)
+# -----------------------------------------------------------------------------
+# Leave as 0 if not needed for Phase 2.
+# These will be used by the CalculationAgent in Phase 3+ for P&L modeling.
+# -----------------------------------------------------------------------------
+overhead_usd_monthly:
+  agency_fees:      0.00    # Any retained agency or consultant fees
+  platform_fees:    0.00    # SaaS tools (analytics, attribution, reporting platforms)
+  seo_tools:        0.00    # SEMrush, Ahrefs, etc.
+  creative_costs:   0.00    # Design / video production amortised monthly
