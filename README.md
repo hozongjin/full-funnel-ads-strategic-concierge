@@ -22,7 +22,7 @@ Agentic AI can bridge this gap by interpreting natural language intent and gener
 
 ### The Approach
 We built a 3-layer architecture:
-1. **Directives**: Strict Markdown SOPs for each agent (Integrity, DataArchitect, Calculation, Concierge, Insights).
+1. **Directives**: Strict Markdown SOPs for each agent (Clarification, Integrity, DataArchitect, Calculation, Concierge, Insights).
 2. **Orchestration**: A Python-based Orchestrator (`agent_orchestrator.py`) that routes tasks sequentially.
 3. **Execution**: Deterministic Python execution scripts (e.g., `calculation_engine.py`) which acts as the CalculationAgent to handle the actual math, removing computation from the LLM's responsibilities.
 
@@ -30,22 +30,25 @@ We built a 3-layer architecture:
 
 ### 1: Sequential Orchestration
 Our system operates a sequential multi-agent pipeline:
-1. **IntegrityAgent**: Performs a forensic baseline check (null-value threshold checking) on the data before any analysis begins.
-2. **DataArchitectAgent**: Translates user intent into BigQuery SQL, restricted strictly to querying **raw atomic counts only**.
-3. **CalculationAgent**: A deterministic agent that performs complex derived math (like bounce or conversion rate) on the raw counts extracted by the DataArchitect.
-4. **ConciergeAgent**: Configures Chart.js JSON structures dynamically based on the data shape.
-5. **InsightsAgent**: Generates strategic business analysis using NLP heuristics.
+1. **ClarificationAgent**: Maps ambiguous natural language requests to canonical internal metrics.
+2. **IntegrityAgent**: Performs a forensic baseline check (null-value threshold checking) on the data before any analysis begins.
+3. **DataArchitectAgent**: Translates user intent into BigQuery SQL, restricted strictly to querying **raw atomic counts only**.
+4. **CalculationAgent**: A deterministic agent that performs complex derived math (like bounce or conversion rate) on the raw counts extracted by the DataArchitect.
+5. **ConciergeAgent**: Configures Chart.js JSON structures dynamically based on the data shape.
+6. **InsightsAgent**: Generates strategic business analysis using NLP heuristics.
 
 ```mermaid
 flowchart TD
     User(("User\nInputs Prompt")) --> Orchestrator
-    Orchestrator["Agent Orchestrator\n(agent_orchestrator.py)"] --> IntegrityAgent
+    Orchestrator["Agent Orchestrator\n(agent_orchestrator.py)"] --> ClarificationAgent
+    ClarificationAgent["ClarificationAgent\n(Maps Intent)"] --> IntegrityAgent
     IntegrityAgent{"IntegrityAgent\n(Validates query scope)"} -- Fails --> Output
     IntegrityAgent -- Passes --> DataArchitect
     DataArchitect["DataArchitectAgent\n(Generates BigQuery SQL)"] --> SelfHeal
     SelfHeal{"Self-Healing Loop\n(Fixes syntax errors)"} -- Syntax Error --> DataArchitect
     SelfHeal -- Valid SQL --> BQ[("BigQuery")]
-    BQ --> ParallelSplit{{"Aggregation & Routing"}}
+    BQ --> CalculationAgent["CalculationAgent\n(Deterministic Math)"]
+    CalculationAgent --> ParallelSplit{{"Aggregation & Routing"}}
     ParallelSplit --> ConciergeAgent["ConciergeAgent\n(Chart.js Config)"]
     ParallelSplit --> InsightsAgent["InsightsAgent\n(Strategic Insights)"]
     ConciergeAgent --> Output(("Dynamic UI\n(SSE Real-time)"))
@@ -83,57 +86,38 @@ We built a custom Semantic Backtester (`evaluation_runner.py`) using Gherkin-syn
 | :--- | :--- | :--- |
 | **ClarificationAgent** | 3 | • **Purpose**: Validate user intent mapping and grouping dimension enforcement <br> • **Metric**: LLM-as-a-Judge Reasoning Score (Threshold > 85) |
 | **DataArchitectAgent** | 3 | • **Purpose**: Ensure SQL is executable, strictly returns atomic counts, and uses proper syntax (e.g., `UNNEST`) <br> • **Metric**: Deterministic BigQuery Dry-Run API & syntax regex (100% required) |
+| **CalculationAgent** | N/A | • **Purpose**: Defers to a deterministic Python calculation engine for math (ROAS, CVR, etc.) so that the LLM does not perform mathematical reasoning on its own. <br> • **Metric**: Standard Python unit-testing (100% deterministic, bypasses LLM-evaluator) |
 | **IntegrityAgent** | 2 | • **Purpose**: Validate forensic null-value checks and enforce rigidly non-conversational output <br> • **Metric**: Deterministic string parsing (100% required) |
 | **ConciergeAgent** | 2 | • **Purpose**: Validate Chart.js JSON configuration without data hallucination <br> • **Metric**: Deterministic JSON schema validation (100% required) |
 | **InsightsAgent** | 3 | • **Purpose**: Prevent hallucination and ensure business recommendations are conditional on data richness <br> • **Metric**: LLM-as-a-Judge Reasoning Score (Threshold > 85) |
 
 ### Evaluation Results
-Run the full test suite yourself with:
-```bash
-uv run execution/agents_cli.py eval run --agent all --runs 1
-```
-
 Below is a representative output from the custom `agents_cli.py` Evaluation harness showing the final, stabilized pipeline:
 
 ```text
 ============================================================
- AGENTS CLI: Reasoning Evaluator
- Target: ALL | Tests: 15 | Runs: 1
+AGENTS CLI: Reasoning Evaluator
+Target: ALL | Tests: 15 | Runs: 1
 ============================================================
 ...
 ============================================================
- REASONING STABILITY REPORT
+REASONING STABILITY REPORT
 ============================================================
-  [clarification-ambiguous-metric]
-    Avg: 100.0 | StDev:  0.0 | Status: STABLE
-  [clarification-time-series]
-    Avg: 100.0 | StDev:  0.0 | Status: STABLE
-  [clarification-missing-data]
-    Avg: 100.0 | StDev:  0.0 | Status: STABLE
-  [dataarchitect-strict-raw-counts]
-    Avg: 100.0 | StDev:  0.0 | Status: STABLE
-  [dataarchitect-date-filtering]
-    Avg: 100.0 | StDev:  0.0 | Status: STABLE
-  [dataarchitect-unnest-items]
-    Avg: 100.0 | StDev:  0.0 | Status: STABLE
-  [concierge-visual-memory]
-    Avg: 100.0 | StDev:  0.0 | Status: STABLE
-  [concierge-anti-truncation]
-    Avg: 100.0 | StDev:  0.0 | Status: STABLE
-  [concierge-multi-series]
-    Avg: 100.0 | StDev:  0.0 | Status: STABLE
-  [insights-actionable-recommendation]
-    Avg:  95.0 | StDev:  0.0 | Status: STABLE
-  [insights-positive-reinforcement]
-    Avg: 100.0 | StDev:  0.0 | Status: STABLE
-  [insights-hallucination-avoidance]
-    Avg: 100.0 | StDev:  0.0 | Status: STABLE
-  [integrity-high-null-rate]
-    Avg: 100.0 | StDev:  0.0 | Status: STABLE
-  [integrity-clean-data]
-    Avg: 100.0 | StDev:  0.0 | Status: STABLE
-  [integrity-exception-handling]
-    Avg: 100.0 | StDev:  0.0 | Status: STABLE
+[clarification-ambiguous-metric] Avg: 100.0 | StDev: 0.0 | Status: STABLE
+[clarification-time-series] Avg: 100.0 | StDev: 0.0 | Status: STABLE
+[clarification-missing-data] Avg: 100.0 | StDev: 0.0 | Status: STABLE
+[dataarchitect-strict-raw-counts] Avg: 100.0 | StDev: 0.0 | Status: STABLE
+[dataarchitect-date-filtering] Avg: 100.0 | StDev: 0.0 | Status: STABLE
+[dataarchitect-unnest-items] Avg: 100.0 | StDev: 0.0 | Status: STABLE
+[concierge-visual-memory] Avg: 100.0 | StDev: 0.0 | Status: STABLE
+[concierge-anti-truncation] Avg: 100.0 | StDev: 0.0 | Status: STABLE
+[concierge-multi-series] Avg: 100.0 | StDev: 0.0 | Status: STABLE
+[insights-actionable-recommendation] Avg: 95.0 | StDev: 0.0 | Status: STABLE
+[insights-positive-reinforcement] Avg: 100.0 | StDev: 0.0 | Status: STABLE
+[insights-hallucination-avoidance] Avg: 100.0 | StDev: 0.0 | Status: STABLE
+[integrity-high-null-rate] Avg: 100.0 | StDev: 0.0 | Status: STABLE
+[integrity-clean-data] Avg: 100.0 | StDev: 0.0 | Status: STABLE
+[integrity-exception-handling] Avg: 100.0 | StDev: 0.0 | Status: STABLE
 ============================================================
 ```
 
