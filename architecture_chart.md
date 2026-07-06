@@ -13,19 +13,23 @@ flowchart TD
     Orchestrator["⚙️ Agent Orchestrator\n(execution/agent_orchestrator.py)"]:::orchestratorNode
     MasterData[("📄 Master Data\n(YAML Config)")]:::dataNode
     
-    IntegrityAgent{"🛡️ Stage 1: IntegrityAgent\n(Validates query scope)"}:::agentNode
+    ClarificationAgent["🧠 Stage 1: ClarificationAgent\n(Maps Intent)"]:::agentNode
     
-    DataArchitect["🏗️ Stage 2: DataArchitectAgent\n(Translates to BigQuery SQL)"]:::agentNode
+    IntegrityAgent{"🛡️ Stage 2: IntegrityAgent\n(Validates query scope)"}:::agentNode
+    
+    DataArchitect["🏗️ Stage 3: DataArchitectAgent\n(Translates to BigQuery SQL)"]:::agentNode
     SelfHeal{"🔄 Self-Healing Loop\n(Fixes syntax errors)"}:::agentNode
     
     BQ[("📊 BigQuery\n(Executes SQL)")]:::systemNode
     
+    CalculationAgent["⚙️ Stage 4: CalculationAgent\n(Deterministic Math)"]:::agentNode
+    
     ParallelSplit{{"Data Aggregation & Routing"}}:::orchestratorNode
     
     VisualMemory[("🧠 Visual Memory\n(JSON Cache)")]:::dataNode
-    ConciergeAgent["🎨 Stage 3: ConciergeAgent\n(Selects Chart Type & Generates JSON)"]:::agentNode
+    ConciergeAgent["🎨 Stage 5: ConciergeAgent\n(Selects Chart Type & Generates JSON)"]:::agentNode
     
-    InsightsAgent["🧠 Stage 4: InsightsAgent\n(Generates Plaintext Recommendations)"]:::agentNode
+    InsightsAgent["🧠 Stage 6: InsightsAgent\n(Generates Plaintext Recommendations)"]:::agentNode
     
     Output(("💻 Dynamic UI\n(SSE Real-time Render)")):::userNode
 
@@ -33,7 +37,8 @@ flowchart TD
     User -->|Sends Query| Orchestrator
     MasterData -.->|Provides Defaults| Orchestrator
     
-    Orchestrator --> IntegrityAgent
+    Orchestrator --> ClarificationAgent
+    ClarificationAgent --> IntegrityAgent
     IntegrityAgent -- "Fails validation" --> Output
     IntegrityAgent -- "Passes" --> DataArchitect
     
@@ -41,7 +46,8 @@ flowchart TD
     SelfHeal -- "Syntax Error" --> DataArchitect
     SelfHeal -- "Valid SQL" --> BQ
     
-    BQ -->|Raw JSON Data| ParallelSplit
+    BQ -->|Raw JSON Data| CalculationAgent
+    CalculationAgent --> ParallelSplit
     
     ParallelSplit --> VisualMemory
     VisualMemory -.->|Maintains consistency| ConciergeAgent
