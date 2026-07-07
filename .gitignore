@@ -22,3 +22,7 @@ phase1_kaggle_cells.py
 phase1_test.ipynb
 test_sql.py
 config/eval_log.jsonl
+specs/prd.md
+specs/writeup
+specs/writeup_requirements.md
+kaggle_writeup_draft.md

@@ -169,8 +169,17 @@ The Full-Funnel Ads Strategic Concierge tool successfully merges the flexibility
 
 ### Prerequisites
 - Python 3.11+
-- [`uv`](https://docs.astral.sh/uv/) package manager
-- A Google Cloud project with BigQuery API enabled
+- [**`uv`**](https://docs.astral.sh/uv/) package manager. 
+  - To install `uv` on Windows, run:
+    ```powershell
+    powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
+    ```
+  - To install `uv` on macOS/Linux, run:
+    ```bash
+    curl -LsSf https://astral.sh/uv/install.sh | sh
+    ```
+  - Alternatively, install via pip: `pip install uv`
+- A Google Cloud project with the BigQuery API enabled
 - A Google Gemini API key ([get one here](https://aistudio.google.com/apikey))
 - A Google Cloud service account with BigQuery read access
 
@@ -181,17 +190,32 @@ cd full-funnel-ads-strategic-concierge
 ```
 
 ### 2. Set up environment variables
-```bash
-cp .env.example .env
-```
-Edit `.env` and fill in:
-- `GEMINI_API_KEY` — your Gemini API key
-- `GOOGLE_APPLICATION_CREDENTIALS` — path to your service account JSON file (save it as `credentials.json` in the root)
+1. Copy the example environment file:
+   ```bash
+   cp .env.example .env
+   ```
+2. Edit `.env` and fill in:
+   - `GEMINI_API_KEY` — your Gemini API key.
+   - `GOOGLE_APPLICATION_CREDENTIALS` — set this to `"credentials.json"` (this specifies the path to your service account JSON file).
+3. Obtain your GCP Service Account Key JSON from the Google Cloud Console, rename it to `credentials.json`, and place it in the root folder of this project.
+
+*Note: The BigQuery client library automatically extracts your Google Cloud **Project ID** directly from this `credentials.json` file.*
 
 ### 3. Configure your BigQuery dataset
-Edit `config/master_data.yaml` and update the `project_id` and `dataset_id` fields to point to your GA4 BigQuery export.
+By default, the application is pre-configured to query Google's public GA4 dataset:
+`bigquery-public-data.ga4_obfuscated_sample_ecommerce`
+
+If you want to run the strategic concierge against your own GA4 BigQuery export:
+1. Locate and replace all occurrences of `bigquery-public-data.ga4_obfuscated_sample_ecommerce` with your own `<project_id>.<dataset_id>` in the following files:
+   - [execution/agent_orchestrator.py]
+   - [execution/app.py]
+   - [execution/dashboard_api.py]
+   - [execution/bq_connector.py]
+   - [directives/integrity_agent_skill.md]
+   - [directives/data_architect_agent_skill.md]
 
 ### 4. Run the app
+Start the Flask application using:
 ```bash
 uv run execution/app.py
 ```
@@ -199,3 +223,4 @@ The app will be available at `http://localhost:5000`.
 
 ### Security Note
 API keys and credentials are stored in `.env` and `credentials.json` — both are excluded from version control via `.gitignore`. BigQuery access is enforced as read-only (`SELECT` statements only).
+
